@@ -10,20 +10,20 @@ use Log;
 class CommunicateService implements ICommunicateService
 {
     private $client;
-
-
-    public function __construct() {
-        $this->client = new Services_Twilio(
-            config('services.twilio.ACCOUNT_SID'),
-            config('services.twilio.AUTH_TOKEN')
-        );
-    }
     
+    private $twilioML;
+
+    public function __construct(Services_Twilio_Twiml $twilioML, Services_Twilio $client) {
+        $this->twilioML = $twilioML;
+        $this->client = $client;
+//        $this->client = $this->app->make(Services_Twilio::class);
+    }
+
     
     public function newNumber($iso, $type = 'Local', $params = [])
     {
-        $numbers = $this->
-            getAvailablePhoneNumbers($iso, $type = 'Local', $params = []);
+        $numbers = $this
+            ->getAvailablePhoneNumbers($iso, $type = 'Local', $params = []);
         
         if(is_array($numbers)) {
             return $this->createPhoneNumber($numbers[0]->phone_number);
@@ -33,7 +33,7 @@ class CommunicateService implements ICommunicateService
     
     public function dialXml($number)
     {
-        $twiml = new Services_Twilio_Twiml();
+        $twiml = $this->twilioML;
         return $twiml->response($twiml->dial($number, ['timeout' => '10']));
     }
 
@@ -41,8 +41,8 @@ class CommunicateService implements ICommunicateService
     private function getAvailablePhoneNumbers($iso, $type = 'Local', $params = [])
     {
         try {
-            $result = $this->client->account->
-                available_phone_numbers->getList($iso, $type, $params);
+            $result = $this->client->account
+                ->available_phone_numbers->getList($iso, $type, $params);
         } catch (Services_Twilio_RestException $ex) {
             Log::error($ex->getMessage());
             return false;
@@ -65,6 +65,13 @@ class CommunicateService implements ICommunicateService
         }
         
         return $result;
+    }
+    
+    private function setClient($client)
+    {
+        $this->client = $client;
+        
+        return $this;
     }
 }
 
